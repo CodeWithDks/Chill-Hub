@@ -41,37 +41,39 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/friends', friendRoutes);
-app.use('/api/chat', chatRoutes);
-
-// Database Connection
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ Connected to MongoDB Atlas'))
-    .catch(err => {
-        console.error('❌ MongoDB connection error:', err);
-        process.exit(1);
+// Health Check Route (MUST be first for deployment platforms)
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV,
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'connecting'
     });
+});
 
 // Basic Route
 app.get('/', (req, res) => {
     res.json({
         message: 'Chill Hub API is running',
         version: '1.0.0',
-        status: 'ok'
+        status: 'ok',
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'connecting'
     });
 });
 
-// Health Check Route (required by most deployment platforms)
-app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/friends', friendRoutes);
+app.use('/api/chat', chatRoutes);
+
+// Database Connection (async - doesn't block health checks)
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('✅ Connected to MongoDB Atlas'))
+    .catch(err => {
+        console.error('❌ MongoDB connection error:', err);
+        process.exit(1);
     });
-});
 
 // 404 handler
 app.use((req, res) => {
