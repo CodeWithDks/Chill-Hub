@@ -1,0 +1,8 @@
+{
+    "rewrites": [
+        {
+            "source": "/api/:path*",
+            "destination": "https://chill-hub-server.up.railway.app/api/:path*"
+        }
+    ]
+}
